@@ -76,11 +76,11 @@ int main(int argc, char **argv) {
 			printf("[*] Allocated memory at %p\n", stage);
 			if (insert_bp && offset) {
 				bytes_read = fread((char*)stage, sizeof(char), offset-1, fp);
-				printf("[*] %d bytes of shellcode read\n", bytes_read);
+				printf("[*] %zu bytes of shellcode read\n", bytes_read);
 				memmove((char*)stage+offset-1, &hexcc, 1);
 				printf("[*] Breakpoint inserted at %p\n",(char*)stage+offset-1);
 				bytes_read = fread((char*)stage+offset, sizeof(char), (shellcode_size - offset +1), fp);
-				printf("[*] %d remaining bytes of shellcode read\n", bytes_read);
+				printf("[*] %zu remaining bytes of shellcode read\n", bytes_read);
 			} else if (insert_bp) {
 				memmove(stage, &hexcc, 1);
 				fread((char*)stage+1, sizeof(char), shellcode_size, fp);
@@ -127,9 +127,7 @@ int main(int argc, char **argv) {
 		target_addy = stage;
 	}
 
-	printf("[*} JUMPing to shellcode at %p, enjoy :)\n",target_addy);
-	__asm {
-		mov eax, target_addy
-		jmp eax
-	}
+	printf("[*} Executing shellcode at %p, enjoy :)\n",target_addy);
+	int(*sc)() = target_addy;
+	sc();
 }
