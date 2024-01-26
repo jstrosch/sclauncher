@@ -1,4 +1,4 @@
-# SCLauncher - Basic Shellcode Tester and Debugger
+# SCLauncher - Basic Shellcode Tester, Debugger and PE-File Wrapper
 
 This program is designed to load 32-bit or 64-bit shellcode and allow for execution or debugging. In addition, it can produce executable PE files based on the desired shellcode. This can ease testing as the output binary can be used by standard reverse engineering tools (i.e. IDA Pro (even free) and debuggers).
 
