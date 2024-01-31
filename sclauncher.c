@@ -1,7 +1,9 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "pe_file.h"
+#include "utils.h"
 
 //use this as a byte array to load shellcode. Example: char shellcode[2] = "\x55\xEB"
 char shellcode[] = ""; 
@@ -31,10 +33,11 @@ int main(int argc, char **argv) {
 	unsigned int shellcode_size = 0;
 	unsigned int offset = 0;
 	char hexcc[1] = {0x90};
-	int insert_bp = 0;
+	bool insert_bp = false;
+	bool produce_pe = false;
 	char file_path[100] = {0};
 	FILE*fp = NULL;
-	char produce_pe = 0;
+	
 	int is_64 = 0;
 
 	void*stage = NULL;
@@ -51,7 +54,7 @@ int main(int argc, char **argv) {
 			usage();
 			exit(0);
 		} else if (!strncmp(argv[arg_count], "-pe",3)){
-			produce_pe = 1;
+			produce_pe = true;
 			printf("[*] Producing a PE file...\n");
 		} else if (!strncmp(argv[arg_count],"-ep",3)) {
 			command_arg = validate_argument(argv[arg_count]);
@@ -61,7 +64,7 @@ int main(int argc, char **argv) {
 			command_arg = validate_argument(argv[arg_count]);
 			strncpy(file_path,command_arg,strlen(command_arg));
 		} else if(!strncmp(argv[arg_count],"-bp",3)){
-			insert_bp = 1;
+			insert_bp = true;
 			hexcc[0] = 0xCC;
 			puts("[*] Inserting breakpoint before shellcode");
 		} else if(!strncmp(argv[arg_count],"-64",3)){
@@ -84,6 +87,12 @@ int main(int argc, char **argv) {
 			}
 			printf("[*] Found %d bytes of shellcode\n",shellcode_size);
 			fseek(fp, 0L, SEEK_SET);
+
+			sc_stage = calloc(shellcode_size, sizeof(char));
+			fread((char*)sc_stage, sizeof(char), shellcode_size, fp);
+			printf("[*] Shellcode has an entropy of %.2f\n", calculate_entropy(sc_stage, shellcode_size));
+			fseek(fp, 0L, SEEK_SET);
+			free(sc_stage);
 
 			if (produce_pe) {
 				puts("[PE] Producing PE file from shellcode found in a file, then exiting.");
