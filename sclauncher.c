@@ -8,27 +8,6 @@
 //use this as a byte array to load shellcode. Example: char shellcode[2] = "\x55\xEB"
 char shellcode[] = ""; 
 
-char* validate_argument(char*arg){
-	char*p = NULL;
-	p = strstr(arg,"=");
-	if (p == NULL){
-		printf("[!] Equal sign between \"%s\" parameter not found, exiting!",arg);
-		exit(1);
-	}
-	p++;
-	return p;
-}
-
-void usage(void) {
-	puts("[~] Simple shellcode launcher and debugger! This program can read shellcode from a file or use an internal array.");
-	puts("[~] Usage: sclauncher.exe [-f=shellcode.bin] [-o=INT] [-bp]");
-	puts("\t-f: path to file to load shellocode. If you don't provide a file, \n\t\t it will check for an internal array - see source code.");
-	puts("\t-bp: insert a breakpoint before the shellcode, only use if debugging");
-	puts("\t-o: adjust entry point offset in bytes based on zero-index");
-	puts("\t-pe: creates an executable version of the shellcode in a PE file. Only 32-bit output files are supported at this time");
-	puts("\t-64: PE file creation only, creates a 64-bit PE file - assumes 64-bit shellcode");
-}
-
 int main(int argc, char **argv) {
 	unsigned int shellcode_size = 0;
 	unsigned int offset = 0;
