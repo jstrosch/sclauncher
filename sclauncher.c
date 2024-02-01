@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
 	char hexcc[1] = {0x90};
 	bool insert_bp = false;
 	bool produce_pe = false;
+	bool pause = false;
 	char file_path[100] = {0};
 	FILE*fp = NULL;
 	
@@ -26,6 +27,8 @@ int main(int argc, char **argv) {
 	char* sc_stage = NULL;
 	int arg_count = 0;
 	char*command_arg = NULL;
+
+	banner();
 
 	//parse command-line arguments
 	for (arg_count = 0; arg_count < argc; arg_count++) {
@@ -53,8 +56,12 @@ int main(int argc, char **argv) {
 		} else if(!strncmp(argv[arg_count],"-64",3)){
 			is_64 = 1;
 			puts("[*] Producing a 64-bit PE file");
+		} else if(!strncmp(argv[arg_count],"-pause",6)) {
+			pause = true;
+			puts("[*] Pausing before executing shellcode");
 		}
 	}
+	puts("");
 
 	//determine where to load shellcode from
 	if (strlen(file_path) > 0){
@@ -73,7 +80,7 @@ int main(int argc, char **argv) {
 
 			sc_stage = calloc(shellcode_size, sizeof(char));
 			fread((char*)sc_stage, sizeof(char), shellcode_size, fp);
-			printf("[*] Shellcode has an entropy of %.2f\n", calculate_entropy(sc_stage, shellcode_size));
+			printf("[~] Shellcode has an entropy of %.2f\n", calculate_entropy(sc_stage, shellcode_size));
 			fseek(fp, 0L, SEEK_SET);
 			free(sc_stage);
 
@@ -141,7 +148,10 @@ int main(int argc, char **argv) {
 		} else {
 			target_addy = stage;
 		}
-
+		if (pause) {
+			printf("[!] PID is %lu - Attach debugger, set additional breakpoint(s) and press any key", getpid());
+			getchar();
+		}
 		printf("[*} Executing shellcode at %p, enjoy :)\n",target_addy);
 		int(*sc)() = target_addy;
 		sc();
