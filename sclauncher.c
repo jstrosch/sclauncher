@@ -87,11 +87,11 @@ int main(int argc, char **argv) {
 				stage = VirtualAlloc(0, shellcode_size + 1, 0x1000,0x40 );
 				printf("[*] Allocated memory at %p\n", stage);
 				if (insert_bp && entry_point) {
-					bytes_read = fread((char*)stage, sizeof(char), entry_point-1, fp);
+					bytes_read = fread((char*)stage, sizeof(char), entry_point, fp);
 					printf("[*] %zu bytes of shellcode read\n", bytes_read);
-					memmove((char*)stage+entry_point-1, &hexcc, 1);
-					printf("[*] Breakpoint inserted at %p\n",(char*)stage+entry_point-1);
-					bytes_read = fread((char*)stage+entry_point, sizeof(char), (shellcode_size - entry_point +1), fp);
+					memmove((char*)stage+entry_point, &hexcc, 1);
+					printf("[*] Breakpoint inserted at %p\n",(char*)stage+entry_point );
+					bytes_read = fread((char*)stage+entry_point + 1, sizeof(char), (shellcode_size - entry_point), fp);
 					printf("[*] %zu remaining bytes of shellcode read\n", bytes_read);
 				} else if (insert_bp) {
 					memmove(stage, &hexcc, 1);
@@ -119,9 +119,9 @@ int main(int argc, char **argv) {
 			printf("[*] Allocated memory at %p\n", stage);
 		
 			if(insert_bp && entry_point) {
-				memmove(stage, &shellcode, entry_point -1 );
-				memmove((char*) stage+entry_point-1, &hexcc, 1);
-				memmove((char*) stage+entry_point, &shellcode[entry_point-1],shellcode_size - entry_point +1);
+				memmove(stage, &shellcode, entry_point  );
+				memmove((char*) stage+entry_point, &hexcc, 1);
+				memmove((char*) stage+entry_point+1, &shellcode[entry_point-1],shellcode_size - entry_point);
 			} else if (insert_bp) {
 				memmove(stage, &hexcc, 1);
 				memmove((char*)stage+1, &shellcode, shellcode_size);
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
 
 	if( !produce_pe) {
 		if (entry_point) {
-			target_addy = (char*)stage + entry_point - 1; //adjust for zero-based address
+			target_addy = (char*)stage + entry_point; //adjust for zero-based address
 			printf("[*] Adjusting entry_point, new entry point: 0x%p\n", target_addy);
 		} else {
 			target_addy = stage;
