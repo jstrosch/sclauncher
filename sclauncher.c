@@ -5,9 +5,6 @@
 #include "pe_file.h"
 #include "utils.h"
 
-//use this as a byte array to load shellcode. Example: char shellcode[2] = "\x55\xEB"
-char shellcode[] = ""; 
-
 int main(int argc, char **argv) {
 	unsigned int shellcode_size = 0;
 	unsigned int entry_point = 0;
@@ -15,13 +12,12 @@ int main(int argc, char **argv) {
 	bool insert_bp = false;
 	bool produce_pe = false;
 	bool pause = false;
-	char file_path[100] = {0};
+	bool is_64 = false;
+	char sc_path[100] = {0};
 	FILE*fp = NULL;
 	
-	int is_64 = 0;
-
 	void*stage = NULL;
-	int i = 0, len = 0, sc_part1 = 0, sc_part2 = 0;
+	int i = 0, len = 0;
 	size_t bytes_read = 0;
 	void* target_addy = NULL;
 	char* sc_stage = NULL;
@@ -48,13 +44,13 @@ int main(int argc, char **argv) {
 			printf("[*] Adjusting shellcode entry point: +0x%08x\n", entry_point);
 		} else if(!strncmp(argv[arg_count],"-f",2)){
 			command_arg = validate_argument(argv[arg_count]);
-			strncpy(file_path,command_arg,strlen(command_arg));
+			strncpy(sc_path,command_arg,strlen(command_arg));
 		} else if(!strncmp(argv[arg_count],"-bp",3)){
 			insert_bp = true;
 			hexcc[0] = 0xCC;
 			puts("[*] Inserting breakpoint before shellcode");
 		} else if(!strncmp(argv[arg_count],"-64",3)){
-			is_64 = 1;
+			is_64 = true;
 			puts("[*] Producing a 64-bit PE file");
 		} else if(!strncmp(argv[arg_count],"-pause",6)) {
 			pause = true;
@@ -63,10 +59,9 @@ int main(int argc, char **argv) {
 	}
 	puts("");
 
-	//determine where to load shellcode from
-	if (strlen(file_path) > 0){
-		printf("[*] Loading shellcode from path: %s\n", file_path);
-		fp = fopen(file_path,"rb");
+	if (strlen(sc_path) > 0){
+		printf("[*] Loading shellcode from path: %s\n", sc_path);
+		fp = fopen(sc_path,"rb");
 
 		if (fp != NULL){
 			fseek(fp, 0L, SEEK_END);
@@ -109,38 +104,15 @@ int main(int argc, char **argv) {
 			}
 			fclose(fp);
 		} else {
-			puts("[!] Error opening file... exiting");
+			puts("[!] Error opening file... exiting!");
 			exit(1);
 		}
-
-	} else if(strlen(shellcode)) {
-		puts("[*] Loading shellcode from internal array");
-		shellcode_size = strlen(shellcode);
-		printf("[*] Found %d bytes of shellcode\n",shellcode_size);
-
-		if (produce_pe ) {
-			puts("[PE] Producing PE file from shellcode found internally, then exiting.");
-			create_pe(shellcode, shellcode_size, entry_point, is_64);
-		} else {
-			stage = VirtualAlloc(0, shellcode_size + 1, 0x1000,0x40 );
-			printf("[*] Allocated memory at %p\n", stage);
-		
-			if(insert_bp && entry_point) {
-				memmove(stage, &shellcode, entry_point  );
-				memmove((char*) stage+entry_point, &hexcc, 1);
-				memmove((char*) stage+entry_point+1, &shellcode[entry_point-1],shellcode_size - entry_point);
-			} else if (insert_bp) {
-				memmove(stage, &hexcc, 1);
-				memmove((char*)stage+1, &shellcode, shellcode_size);
-			} else {
-				memmove((char*)stage, &shellcode, shellcode_size);
-			}
-		}
 	} else {
-		puts("[!] No shellcode found, exiting...");
+		puts("[!] shellcode path required... exiting!");
 		exit(1);
 	}
 
+	puts("");
 	if( !produce_pe) {
 		if (entry_point) {
 			target_addy = (char*)stage + entry_point; //adjust for zero-based address

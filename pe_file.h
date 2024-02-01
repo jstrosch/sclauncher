@@ -1,4 +1,5 @@
 #include <malloc.h>
+#include <stdbool.h>
 
 struct _IMAGE_DOS_STUB 
 {
@@ -15,7 +16,7 @@ int round_up(int val) {
     return val;
 }
 
-void create_pe(char * sc_inject, int shellcode_size, int entry_point, int is_64) {
+void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64) {
     unsigned int tmp_offset = 0, section_padding = 0;
     char* padding_buffer = NULL;
     FILE*fp = NULL, *pe = NULL;
