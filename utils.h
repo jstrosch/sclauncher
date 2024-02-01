@@ -1,7 +1,8 @@
 #include <math.h>
 
 double calculate_entropy(unsigned char* shellcode, int shellcode_size) {
-    char prob[256] = {0};
+    // using shorts in case an individual byte values in encountered more than a byte can hold
+    short prob[256] = {0};
     int i = 0;
     double entropy = 0;
     double p = 0;
