@@ -12,9 +12,9 @@ const char* _banner =
 void usage(void) {
 	puts("[~] Simple shellcode launcher and debugger! This program can read shellcode from a file or use an internal array.");
 	puts("[~] Usage: sclauncher.exe [-f=shellcode.bin] [-o=INT] [-bp]");
-	puts("\t-f: path to file to load shellocode. If you don't provide a file, \n\t\t it will check for an internal array - see source code.");
+	puts("\t-f: path to file to load shellcode. If you don't provide a file, \n\t\t it will check for an internal array - see source code.");
 	puts("\t-bp: insert a breakpoint before the shellcode, only use if debugging");
-	puts("\t-ep: adjust entry point offset in bytes based on zero-index. Value can be base 10 or hex (prefx with 0x)");
+	puts("\t-ep: adjust entry point offset in bytes based on zero-index. Value can be base 10 or hex (prefix with 0x)");
 	puts("\t-pe: creates an executable version of the shellcode in a PE file");
 	puts("\t-64: PE file creation only, creates a 64-bit PE file - assumes 64-bit shellcode");
     puts("\t-pause: Pause before execution, allowing time to attach a debugger");

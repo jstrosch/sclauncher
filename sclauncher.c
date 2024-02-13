@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 
 			sc_stage = calloc(shellcode_size, sizeof(char));
 			fread((char*)sc_stage, sizeof(char), shellcode_size, fp);
-			printf("[~] Shellcode has an entropy of %.2f\n", calculate_entropy(sc_stage, shellcode_size));
+			printf("[~] Shellcode has entropy of %.2f\n", calculate_entropy(sc_stage, shellcode_size));
 			fseek(fp, 0L, SEEK_SET);
 			free(sc_stage);
 
