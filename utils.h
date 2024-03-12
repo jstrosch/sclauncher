@@ -1,6 +1,6 @@
 #include <math.h>
 
-const char* _version = "0.0.3";
+const char* _version = "0.0.5";
 const char* _banner = 
 "  __________________ .____                               .__                  \n"
 " /   _____/\\_   ___ \\|    |   _____   __ __  ____   ____ |  |__   ___________ \n"
@@ -17,6 +17,7 @@ void usage(void) {
 	puts("\t-ep: adjust entry point offset in bytes based on zero-index. Value can be base 10 or hex (prefix with 0x)");
 	puts("\t-pe: creates an executable version of the shellcode in a PE file");
 	puts("\t-64: PE file creation only, creates a 64-bit PE file - assumes 64-bit shellcode");
+    puts("\t-o: When producing a PE file, defines output file name");
     puts("\t-pause: Pause before execution, allowing time to attach a debugger");
 }
 

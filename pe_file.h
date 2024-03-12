@@ -16,7 +16,7 @@ int round_up(int val) {
     return val;
 }
 
-void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64) {
+void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64, char*output_name) {
     unsigned int tmp_offset = 0, section_padding = 0;
     char* padding_buffer = NULL;
     FILE*fp = NULL, *pe = NULL;
@@ -56,7 +56,7 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
     };
 
     struct _IMAGE_DOS_STUB ids = {0};
-    memmove(&ids.data, "Brought to you by sclauncher.exe",33);
+    memmove(&ids.data, "Brought to you by sclauncher.exe and still can't be run in DOS_MODE.",67);
 
     struct _IMAGE_FILE_HEADER ifh = {
         0x14C,
@@ -148,7 +148,7 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
     };
 
     struct _IMAGE_SECTION_HEADER ish = {
-        ".josh",
+        ".text",
         0,
         0x1000,
         0,
@@ -204,7 +204,10 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
     //create array for padding bytes
     padding_buffer = (char*)calloc(section_padding,1);
 
-    if (is_64) {
+    if(strlen(output_name) > 0) {
+        pe = fopen(output_name, "wb");
+        printf("[PE] Done building PE file...created file %s\n", output_name);
+    } else if (is_64) {
         pe = fopen("sc_output_x64.exe", "wb");
         printf("[PE] Done building PE file...created file sc_output_x64.exe\n");
     } else {

@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
 	bool pause = false;
 	bool is_64 = false;
 	char sc_path[100] = {0};
+	char output_name[100] = {0};
 	FILE*fp = NULL;
 	
 	void*stage = NULL;
@@ -55,6 +56,9 @@ int main(int argc, char **argv) {
 		} else if(!strncmp(argv[arg_count],"-pause",6)) {
 			pause = true;
 			puts("[*] Pausing before executing shellcode");
+		} else if(!strncmp(argv[arg_count],"-o",2)) {
+			command_arg = validate_argument(argv[arg_count]);
+			strncpy(output_name, command_arg, strlen(command_arg));
 		}
 	}
 	puts("");
@@ -83,7 +87,7 @@ int main(int argc, char **argv) {
 				puts("[PE] Producing PE file from shellcode found in a file, then exiting.");
 				sc_stage = (char*)malloc(shellcode_size);
 				fread((char*)sc_stage, sizeof(char), shellcode_size, fp);
-				create_pe(sc_stage,shellcode_size, entry_point, is_64);
+				create_pe(sc_stage,shellcode_size, entry_point, is_64, output_name);
 				free(sc_stage);
 			} else {
 				stage = VirtualAlloc(0, shellcode_size + 1, 0x1000,0x40 );
