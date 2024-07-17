@@ -1,5 +1,6 @@
 #include <malloc.h>
 #include <stdbool.h>
+#include <windows.h>
 
 struct _IMAGE_DOS_STUB 
 {
@@ -21,7 +22,7 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
     char* padding_buffer = NULL;
     FILE*fp = NULL, *pe = NULL;
 
-    struct _IMAGE_DOS_HEADER idh = {
+    IMAGE_DOS_HEADER idh = {
         0x5A4D,
         0x0090,
         0x0003,
@@ -56,9 +57,9 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
     };
 
     struct _IMAGE_DOS_STUB ids = {0};
-    memmove(&ids.data, "Brought to you by sclauncher.exe and still can't be run in DOS_MODE.",67);
+    memmove(&ids.data, "Brought to you by SCLauncher", 28);
 
-    struct _IMAGE_FILE_HEADER ifh = {
+    IMAGE_FILE_HEADER ifh = {
         0x14C,
         0x0001,
         0,
@@ -68,7 +69,9 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         0x0102
     };
 
-    struct _IMAGE_OPTIONAL_HEADER ioh = {
+    IMAGE_DATA_DIRECTORY idd = {0, 0};
+
+    IMAGE_OPTIONAL_HEADER ioh = {
         0x10B,
         14,
         16,
@@ -98,11 +101,26 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         0x100000,
         0x1000,
         0,
-        0,
-        0
+        16,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
     };
 
-    struct _IMAGE_OPTIONAL_HEADER64 ioh64 = {
+    IMAGE_OPTIONAL_HEADER64 ioh64 = {
         0x20B,//PE32+
         14,
         16,
@@ -131,23 +149,38 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         0x100000,
         0x1000,
         0,
-        0,
-        0   
+        16,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,
+        idd,   
     };
 
-    struct _IMAGE_NT_HEADERS inh = {
+    IMAGE_NT_HEADERS inh = {
         0x00004550,
         ifh,
         ioh
     };
 
-    struct _IMAGE_NT_HEADERS64 inh64 = {
+    IMAGE_NT_HEADERS64 inh64 = {
         0x00004550,
         ifh,
         ioh64
     };
 
-    struct _IMAGE_SECTION_HEADER ish = {
+    IMAGE_SECTION_HEADER ish = {
         ".text",
         0,
         0x1000,
