@@ -1,6 +1,6 @@
 #include <math.h>
 
-const char* _version = "0.0.5";
+const char* _version = "0.0.6";
 const char* _banner = 
 "  __________________ .____                               .__                  \n"
 " /   _____/\\_   ___ \\|    |   _____   __ __  ____   ____ |  |__   ___________ \n"
@@ -12,7 +12,9 @@ const char* _banner =
 void usage(void) {
 	puts("[~] Simple shellcode launcher and debugger! This program can read shellcode from a file or use an internal array.");
 	puts("[~] Usage: sclauncher.exe [-f=shellcode.bin] [-o=INT] [-bp]");
-	puts("\t-f: path to file to load shellcode. If you don't provide a file, \n\t\t it will check for an internal array - see source code.");
+	puts("\t-f: path to file to load shellcode");
+    puts("\t-d: path to file to load additional content into memory, simply copies file content into new memory allocation");
+    puts("\t-mm: memory map additional content, must be used with -d argument");
 	puts("\t-bp: insert a breakpoint before the shellcode, only use if debugging");
 	puts("\t-ep: adjust entry point offset in bytes based on zero-index. Value can be base 10 or hex (prefix with 0x)");
 	puts("\t-pe: creates an executable version of the shellcode in a PE file");
