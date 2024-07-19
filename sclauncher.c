@@ -6,31 +6,36 @@
 #include "utils.h"
 
 int main(int argc, char **argv) {
+	int arg_count = 0;
+	char*command_arg = NULL;
+
 	unsigned int shellcode_size = 0;
 	unsigned int additional_content_size = 0;
+
 	unsigned int entry_point = 0;
 	char hexcc[1] = {0x90};
+	
 	bool insert_bp = false;
 	bool produce_pe = false;
 	bool pause = false;
 	bool is_64 = false;
 	bool mem_map_additional = false;
-	char sc_path[100] = {0};
-	char output_name[100] = {0};
-	char additional_content_path[100] = {0};
-	FILE*fp = NULL;
-	FILE*acp = NULL;
+	
+	char*sc_path = NULL;
+	char*additional_content_path = NULL;
+	char*output_name = NULL;
+	
+	FILE* shellcode_file = NULL;
+	FILE* additional_file = NULL;
 	HANDLE hadditional_content = NULL;
 	HANDLE hfile_mapping = NULL;
 
-	void*stage = NULL;
-	void*additional_content = NULL;
-	int i = 0, len = 0;
-	size_t bytes_read = 0;
+	void* stage = NULL;
+	void* additional_content = NULL;
+	DWORD bytes_read = 0;
 	void* target_addy = NULL;
 	char* sc_stage = NULL;
-	int arg_count = 0;
-	char*command_arg = NULL;
+	char* additional_content_stage = NULL;
 
 	banner();
 
@@ -52,7 +57,7 @@ int main(int argc, char **argv) {
 			printf("[*] Adjusting shellcode entry point: +0x%08x\n", entry_point);
 		} else if(!strncmp(argv[arg_count],"-f",2)){
 			command_arg = validate_argument(argv[arg_count]);
-			strncpy(sc_path,command_arg,strlen(command_arg));
+			sc_path = command_arg;
 		} else if(!strncmp(argv[arg_count],"-bp",3)){
 			insert_bp = true;
 			hexcc[0] = 0xCC;
@@ -65,10 +70,10 @@ int main(int argc, char **argv) {
 			puts("[*] Pausing before executing shellcode");
 		} else if(!strncmp(argv[arg_count],"-o", 2)) {
 			command_arg = validate_argument(argv[arg_count]);
-			strncpy(output_name, command_arg, strlen(command_arg));
+			output_name = command_arg;
 		} else if(!strncmp(argv[arg_count], "-d",2)) {
 			command_arg = validate_argument(argv[arg_count]);
-			strncpy(additional_content_path, command_arg, strlen(command_arg));
+			additional_content_path = command_arg;
 		} else if(!strncmp(argv[arg_count], "-mm", 3)) {
 			mem_map_additional = true;
 			puts("[*] Memory mapping additional content file");
@@ -76,45 +81,54 @@ int main(int argc, char **argv) {
 	}
 	puts("");
 
-	if (strlen(sc_path) > 0){
+	if (sc_path){
 		printf("[*] Loading shellcode from path: %s\n", sc_path);
-		fp = fopen(sc_path,"rb");
+		shellcode_file = fopen(sc_path,"rb");
 
-		if (fp != NULL){
-			fseek(fp, 0L, SEEK_END);
-			shellcode_size = ftell(fp);
+		if (shellcode_file != NULL){
+			fseek(shellcode_file, 0L, SEEK_END);
+			shellcode_size = ftell(shellcode_file);
 			if (insert_bp && entry_point >= shellcode_size) {
 				printf("[!] Breakpoint entry point beyond size of shellcode, exiting!");
 				exit(1);
 			}
 			printf("[*] Found %d bytes of shellcode\n",shellcode_size);
-			fseek(fp, 0L, SEEK_SET);
+			fseek(shellcode_file, 0L, SEEK_SET);
 
-			if (strlen(additional_content_path) > 0){
+			if (additional_content_path){
 				printf("[*] Loading additional content from path: %s\n", additional_content_path);
-				//acp = fopen(additional_content_path, "rb");
+				
 				hadditional_content = CreateFile(additional_content_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 
                              FILE_ATTRIBUTE_NORMAL, NULL);
 
 				if (hadditional_content != INVALID_HANDLE_VALUE) {
 					additional_content_size = GetFileSize(hadditional_content, NULL);
+					printf("\t[*] Found %d bytes of additional content\n", additional_content_size);
 				} else {
 					printf("\t[!] Error opening additional content file from %s, skipping!", additional_content_path);
 				}
 			}
 
 			sc_stage = calloc(shellcode_size, sizeof(char));
-			fread((char*)sc_stage, sizeof(char), shellcode_size, fp);
-			printf("[~] Shellcode has entropy of %.2f\n", calculate_entropy(sc_stage, shellcode_size));
-			fseek(fp, 0L, SEEK_SET);
+			fread((char*)sc_stage, sizeof(char), shellcode_size, shellcode_file);
+			printf("\t[~] Shellcode has entropy of %.2f\n", calculate_entropy(sc_stage, shellcode_size));
+			fseek(shellcode_file, 0L, SEEK_SET);
 			free(sc_stage);
 
 			if (produce_pe) {
-				puts("[PE] Producing PE file from shellcode found in a file, then exiting.");
+				puts("[PE] Producing PE file from shellcode, then exiting.");
 				sc_stage = (char*)malloc(shellcode_size);
-				fread((char*)sc_stage, sizeof(char), shellcode_size, fp);
-				create_pe(sc_stage,shellcode_size, entry_point, is_64, output_name);
+				fread((char*)sc_stage, sizeof(char), shellcode_size, shellcode_file);
+
+				if(additional_content_path) {
+					additional_file = fopen( additional_content_path,"rb");
+					additional_content_stage = (char*)malloc(additional_content_size);
+					fread((char*)additional_content_stage, sizeof(char), additional_content_size, additional_file);
+				}
+				
+				create_pe(sc_stage,shellcode_size, entry_point, is_64, output_name, additional_content_stage, additional_content_size);
 				free(sc_stage);
+				free(additional_content_stage);
 			} else {
 				stage = VirtualAlloc(0, shellcode_size + 1, 0x1000,0x40 );
 				printf("[*] Allocated memory for shellcode at 0x%p\n", stage);
@@ -134,26 +148,26 @@ int main(int argc, char **argv) {
 					}
 				}
 
-				if (!additional_content) {
+				if (additional_content_path && !additional_content) {
 					puts("[!] Error allocating memory for additional content, skipping...");
 				}
 
 				if (insert_bp && entry_point) {
 					bytes_read = 0;
-					bytes_read = fread((char*)stage, sizeof(char), entry_point, fp);
-					printf("[*] %zu bytes of shellcode read\n", bytes_read);
+					bytes_read = fread((char*)stage, sizeof(char), entry_point, shellcode_file);
+					printf("[*] %u bytes of shellcode read\n", bytes_read);
 					memmove((char*)stage+entry_point, &hexcc, 1);
 					printf("[*] Breakpoint inserted at %p\n",(char*)stage+entry_point );
-					bytes_read = fread((char*)stage+entry_point + 1, sizeof(char), (shellcode_size - entry_point), fp);
-					printf("[*] %zu remaining bytes of shellcode read\n", bytes_read);
+					bytes_read = fread((char*)stage+entry_point + 1, sizeof(char), (shellcode_size - entry_point), shellcode_file);
+					printf("[*] %u remaining bytes of shellcode read\n", bytes_read);
 				} else if (insert_bp) {
 					memmove(stage, &hexcc, 1);
-					fread((char*)stage+1, sizeof(char), shellcode_size, fp);
+					fread((char*)stage+1, sizeof(char), shellcode_size, shellcode_file);
 				} else {
-					fread((char*)stage, sizeof(char), shellcode_size, fp);
+					fread((char*)stage, sizeof(char), shellcode_size, shellcode_file);
 				}
 			}
-			fclose(fp);
+			fclose(shellcode_file);
 		} else {
 			puts("[!] Error opening file... exiting!");
 			exit(1);

@@ -8,19 +8,21 @@ struct _IMAGE_DOS_STUB
     //char rich_header[104]; 
 };
 
-int round_up(int val) {
-    val = val / 1000;
-    if ((int)val % 1000 > 0){
-        val++;
-    }
-    val *= 1000;
-    return val;
+DWORD align_size(DWORD size, DWORD alignment, DWORD addr){
+    if (!(size % alignment))
+        return addr + size;
+    return addr + (size / alignment + 1) * alignment;
 }
 
-void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64, char*output_name) {
+
+void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64, char*output_name, char * additional_content, int additional_content_size) {
     unsigned int tmp_offset = 0, section_padding = 0;
     char* padding_buffer = NULL;
+    int num_sections = 1;
     FILE*fp = NULL, *pe = NULL;
+
+    unsigned int file_alignment = 0x200;
+    unsigned int section_alignment = 0x1000;
 
     IMAGE_DOS_HEADER idh = {
         0x5A4D,
@@ -59,9 +61,12 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
     struct _IMAGE_DOS_STUB ids = {0};
     memmove(&ids.data, "Brought to you by SCLauncher", 28);
 
+    if(additional_content_size)
+        num_sections = 2;
+
     IMAGE_FILE_HEADER ifh = {
         0x14C,
-        0x0001,
+        num_sections,
         0,
         0,
         0,
@@ -69,9 +74,9 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         0x0102
     };
 
-    IMAGE_DATA_DIRECTORY idd = {0, 0};
+    IMAGE_DATA_DIRECTORY idd = {0x00000000, 0x00000000};
 
-    IMAGE_OPTIONAL_HEADER ioh = {
+    IMAGE_OPTIONAL_HEADER32 ioh = {
         0x10B,
         14,
         16,
@@ -82,8 +87,8 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         0x1000,
         0,
         0x400000,
-        0x1000,
-        0x200,
+        section_alignment,
+        file_alignment,
         6,
         0,
         0,
@@ -117,7 +122,7 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         idd,
         idd,
         idd,
-        idd,
+        idd
     };
 
     IMAGE_OPTIONAL_HEADER64 ioh64 = {
@@ -168,7 +173,7 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         idd,   
     };
 
-    IMAGE_NT_HEADERS inh = {
+    IMAGE_NT_HEADERS32 inh = {
         0x00004550,
         ifh,
         ioh
@@ -193,6 +198,19 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         0xE0000020
     };
 
+    IMAGE_SECTION_HEADER ish_additional = {
+        ".content",
+        0,
+        0,
+        0,
+        0x400,
+        0,
+        0,
+        0,
+        0,
+        0xE0000020    
+    };
+
     puts("[PE] Adding shellcode...");
 
     //update lfanew based on size of image_dos_header and image_dos_stub
@@ -203,6 +221,10 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         section_padding = 0x400 - (sizeof(idh) + sizeof(ids) + sizeof(inh64) + sizeof(ish));
     } else {
         section_padding = 0x400 - (sizeof(idh) + sizeof(ids) + sizeof(inh) + sizeof(ish));
+    }
+
+    if(additional_content_size) {
+        section_padding -= sizeof(ish_additional);
     }
 
     //update entry point
@@ -218,17 +240,32 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
     ish.SizeOfRawData = shellcode_size;
     ish.Misc.VirtualSize = shellcode_size;
 
+    if(additional_content_size) {
+        ish_additional.PointerToRawData = 0x400 + align_size(shellcode_size, file_alignment, 0);
+        ish_additional.SizeOfRawData = align_size(additional_content_size, file_alignment, 0);
+        ish_additional.Misc.VirtualSize = align_size(additional_content_size, file_alignment, 0);
+        ish_additional.VirtualAddress = align_size(shellcode_size, section_alignment, 0x1000);
+    }
+
     if (is_64) {
         inh64.FileHeader.Machine = 0x8664;
         inh64.OptionalHeader.SizeOfCode = shellcode_size;
-        inh64.OptionalHeader.SizeOfImage =  round_up(shellcode_size + 0x1000);
+        if(additional_content_size) {
+            inh64.OptionalHeader.SizeOfImage = ish_additional.Misc.VirtualSize + ish_additional.VirtualAddress;
+        } else {
+            inh64.OptionalHeader.SizeOfImage =  align_size(shellcode_size, section_alignment, 0x1000);
+        }
         inh64.FileHeader.SizeOfOptionalHeader = sizeof(inh64.OptionalHeader);
 
         inh64.FileHeader.TimeDateStamp = time(NULL);
     } else {
         inh.OptionalHeader.SizeOfCode = shellcode_size;
         //virtual address + section size rounded up. shellcode size will equal section size
-        inh.OptionalHeader.SizeOfImage =  round_up(shellcode_size + 0x1000);
+        if(additional_content_size) {
+            inh.OptionalHeader.SizeOfImage = ish_additional.Misc.VirtualSize + ish_additional.VirtualAddress;
+        } else {
+            inh.OptionalHeader.SizeOfImage =  align_size(shellcode_size, section_alignment, 0x1000);
+        }
         inh.FileHeader.SizeOfOptionalHeader = sizeof(inh.OptionalHeader);
 
         inh.FileHeader.TimeDateStamp = time(NULL);
@@ -255,9 +292,23 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         fwrite(&inh,sizeof(inh),1,pe);
     }
     fwrite(&ish,sizeof(ish),1,pe);
+    if(additional_content_size) {
+        fwrite(&ish_additional, sizeof(ish_additional), 1, pe);
+    }
     fwrite(padding_buffer, _msize(padding_buffer),1,pe);
     fwrite(sc_inject,shellcode_size, 1, pe);
 
-    fclose(pe);
     free(padding_buffer);
+
+    if(additional_content_size) {
+        section_padding = align_size(shellcode_size, file_alignment, 0) - shellcode_size;
+        if (section_padding){
+            padding_buffer = (char*)calloc(section_padding,1);
+            fwrite(padding_buffer, _msize(padding_buffer),1,pe);
+            free(padding_buffer);
+        }
+        fwrite(additional_content, additional_content_size, 1, pe);
+    }
+
+    fclose(pe);
 }

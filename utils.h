@@ -7,20 +7,28 @@ const char* _banner =
 " \\_____  \\ /    \\  \\/|    |   \\__  \\ |  |  \\/    \\_/ ___\\|  |  \\_/ __ \\_  __ \\\n"
 " /        \\\\     \\___|    |___ / __ \\|  |  /   |  \\  \\___|   Y  \\  ___/|  | \\/\n"
 "/_______  / \\______  /_______ (____  /____/|___|  /\\___  >___|  /\\___  >__|   \n"
-"        \\/         \\/        \\/    \\/           \\/     \\/     \\/     \\/       \n\nVersion: %s\n\n";
+"        \\/         \\/        \\/    \\/           \\/     \\/     \\/     \\/       \n\nVersion: %s\t\t\t\t\t\twww.thecyberyeti.com\n\n";
 
 void usage(void) {
-	puts("[~] Simple shellcode launcher and debugger! This program can read shellcode from a file or use an internal array.");
+	puts("[~] Simple shellcode debugger and PE file wrapper!");
 	puts("[~] Usage: sclauncher.exe [-f=shellcode.bin] [-o=INT] [-bp]");
-	puts("\t-f: path to file to load shellcode");
-    puts("\t-d: path to file to load additional content into memory, simply copies file content into new memory allocation");
-    puts("\t-mm: memory map additional content, must be used with -d argument");
-	puts("\t-bp: insert a breakpoint before the shellcode, only use if debugging");
-	puts("\t-ep: adjust entry point offset in bytes based on zero-index. Value can be base 10 or hex (prefix with 0x)");
-	puts("\t-pe: creates an executable version of the shellcode in a PE file");
-	puts("\t-64: PE file creation only, creates a 64-bit PE file - assumes 64-bit shellcode");
-    puts("\t-o: When producing a PE file, defines output file name");
+    puts("");
+    puts("[*] Global arguments:");
+	puts("\t-f: [REQUIRED] path to file to load shellcode");
+    puts("\t-ep: adjust entry point offset in bytes based on zero-index. Value can be base 10 or hex (prefix with 0x)");
+    puts("");
+    puts("[*] Debugging shellcode:");
+    puts("\t-bp: insert a breakpoint before the shellcode");
     puts("\t-pause: Pause before execution, allowing time to attach a debugger");
+    puts("\t-d: path to file to load additional content into memory, simply copies file content into new memory allocation");
+    puts("\t\t-mm: memory map additional content, must be used with -d argument");
+	puts("");
+	puts("[*] Creating PE file:");
+    puts("\t-pe: [REQUIRED] creates an executable version of the shellcode in a PE file");
+    puts("\t-d: path to file to load additional content, content will be added to a new section in the PE file");
+	puts("\t-64: creates a 64-bit PE file - assumes 64-bit shellcode");
+    puts("\t-o: output file name");
+    
 }
 
 void banner() {
