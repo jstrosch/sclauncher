@@ -1,4 +1,4 @@
-# SCLauncher - Basic Shellcode Tester, Debugger and PE-File Wrapper
+# SCLauncher - Shellcode Tester, Debugger and PE-File Wrapper
 
 This program is designed to load 32-bit or 64-bit shellcode and allow for execution or debugging. In addition, it can produce executable PE files based on the desired shellcode. This can ease testing as the output binary can be used by standard reverse engineering tools (i.e. IDA Pro (even free) and debuggers).
 
@@ -35,6 +35,10 @@ The only required argument is to provide the path to the file that contains your
 You can use the ```-pe``` argument to produce a PE file that essentially wraps the shellcode. The shellcode is placed in the ```.text``` section. The entry point is defined as the beginning of the section, unless the ```-ep``` argument is used. This argument will define an offset from the beginning of the section and be used to update the PE files entry point (i.e. AddressOfEntry field). Additionally, the ```-64``` argument can be used to generate a 64-bit PE file, likely for 64-bit shellcode. The resulting PE file can be analyzed via common reverse engineering tools such as IDA Pro, Ghidra or a debugger such as x32dbg/WinDbg/etc.
 
 <img src="images/produce_pe.png">
+
+If the *-d* argument is used, SCLauncher will create a new section named *.content* and copy the contents of the file into this section. This section will follow the *.text* section.
+
+<img src="images/additional_content.png">
 
 ## What if I have a char array?
 
