@@ -211,8 +211,6 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
         0xE0000020    
     };
 
-    puts("[PE] Adding shellcode...");
-
     //update lfanew based on size of image_dos_header and image_dos_stub
     idh.e_lfanew = (sizeof(idh) + sizeof(ids));
 
@@ -273,7 +271,7 @@ void create_pe(char * sc_inject, int shellcode_size, int entry_point, bool is_64
 
     //create array for padding bytes
     padding_buffer = (char*)calloc(section_padding,1);
-
+    puts("");
     if(strlen(output_name) > 0) {
         pe = fopen(output_name, "wb");
         printf("[PE] Done building PE file...created file %s\n", output_name);

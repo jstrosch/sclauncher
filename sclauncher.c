@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
 			exit(0);
 		} else if (!strncmp(argv[arg_count], "-pe",3)){
 			produce_pe = true;
-			printf("[*] Producing a PE file...\n");
+			printf("[*] Producing a PE file, then exiting\n");
 		} else if (!strncmp(argv[arg_count],"-ep",3)) {
 			command_arg = validate_argument(argv[arg_count]);
 			if (!strncmp(command_arg, "0x", 2)){
@@ -92,11 +92,17 @@ int main(int argc, char **argv) {
 				printf("[!] Breakpoint entry point beyond size of shellcode, exiting!");
 				exit(1);
 			}
-			printf("[*] Found %d bytes of shellcode\n",shellcode_size);
+			printf("\t[*] Found %d bytes of shellcode\n",shellcode_size);
 			fseek(shellcode_file, 0L, SEEK_SET);
 
+			sc_stage = calloc(shellcode_size, sizeof(char));
+			fread((char*)sc_stage, sizeof(char), shellcode_size, shellcode_file);
+			printf("\t[~] Shellcode has entropy of %.2f\n", calculate_entropy(sc_stage, shellcode_size));
+			fseek(shellcode_file, 0L, SEEK_SET);
+			free(sc_stage);
+
 			if (additional_content_path){
-				printf("[*] Loading additional content from path: %s\n", additional_content_path);
+				printf("]n[*] Loading additional content from path: %s\n", additional_content_path);
 				
 				hadditional_content = CreateFile(additional_content_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 
                              FILE_ATTRIBUTE_NORMAL, NULL);
@@ -109,14 +115,7 @@ int main(int argc, char **argv) {
 				}
 			}
 
-			sc_stage = calloc(shellcode_size, sizeof(char));
-			fread((char*)sc_stage, sizeof(char), shellcode_size, shellcode_file);
-			printf("\t[~] Shellcode has entropy of %.2f\n", calculate_entropy(sc_stage, shellcode_size));
-			fseek(shellcode_file, 0L, SEEK_SET);
-			free(sc_stage);
-
 			if (produce_pe) {
-				puts("[PE] Producing PE file from shellcode, then exiting.");
 				sc_stage = (char*)malloc(shellcode_size);
 				fread((char*)sc_stage, sizeof(char), shellcode_size, shellcode_file);
 
@@ -131,7 +130,7 @@ int main(int argc, char **argv) {
 				free(additional_content_stage);
 			} else {
 				stage = VirtualAlloc(0, shellcode_size + 1, 0x1000,0x40 );
-				printf("[*] Allocated memory for shellcode at 0x%p\n", stage);
+				printf("\n[*] Allocated memory for shellcode at 0x%p\n", stage);
 
 				if(mem_map_additional) {
 					hfile_mapping = CreateFileMapping(hadditional_content, NULL, PAGE_READONLY, 0, 0, NULL);
@@ -177,16 +176,15 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	puts("");
 	if( !produce_pe) {
 		if (entry_point) {
 			target_addy = (char*)stage + entry_point; //adjust for zero-based address
-			printf("[*] Adjusting entry_point, new entry point: 0x%p\n", target_addy);
+			printf("\t[*] Adjusting entry_point, new entry point: 0x%p\n", target_addy);
 		} else {
 			target_addy = stage;
 		}
 		if (pause) {
-			printf("[!] PID is %lu - Attach debugger, set additional breakpoint(s) and press enter to begin execution", getpid());
+			printf("\n[!] PID is %lu - Attach debugger, set additional breakpoint(s) and press enter to begin execution", getpid());
 			getchar();
 		}
 		printf("[*} Executing shellcode at %p, enjoy :)\n",target_addy);
