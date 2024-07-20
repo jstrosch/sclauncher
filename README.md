@@ -6,10 +6,23 @@ This program is designed to load 32-bit or 64-bit shellcode and allow for execut
 
 Release binaries are available. You can view a demo of this tool on [YouTube](https://youtu.be/U8SkM99TB2g)
 
-This program provides several options for working with your shellcode:
-* You can use the ```-pause``` argument to pause this program before executing the shellcode. This allows for a debugger to be attached and breakpoints to be set. Keep in mind that there are options available to have this utility set breakpoints for you, see the ```-bp``` argument.
-* You can produce PE files from your shellcode, then disassemble or debug them as you would a normal PE file.
-* You can run the the program directly under a debugger, providing the appropriate arguments through your debuggers interface.
+This program provides several options for working with your shellcode, organized by their usage.
+
+**Global arguments**
+- -f: required, path of the file to load shellcode from
+- -ep: adjusts the entry point offset. If debugging, this will become the offset that is executed. if using with PE file creation, this will become the *AddressOfEntry* value
+
+**Debugging shellcode**
+- -bp: SCLauncher will insert a breakpoint (0xCC) at the desired offset. *Note, this doesn't not appear to work with all debuggers.*
+- -pause: Pauses execution before executing the shellcode, allowing for a debugger to be attached or other monitoring tools to be started.
+- -d: path to a file to load additional content. For example, if the shellcode is dependent on other content being in memory.
+- -mm: Works with -d only, this will load the additional content pointed to by the *-d* argument as a memory mapped file.
+
+**Creating a PE File**
+- -pe: Tells SCLauncher to create a PE file
+- -d: If used in the context of PE file creation, will create a new section named *.content* with the content of this file.
+- -64: Creates a 64-bit executable, for use with 64-bit shellcode.
+- -o: Defines outpout file name for generated PE file. Default is *sc_outpout.exe*.
 
 ## Executing Shellcode From a File
 
